@@ -13,8 +13,6 @@ const allowedOrigins = [
   "http://localhost:5173"
 ];
 
-
-// 🌍 Allow all origins for public access
 app.use(cors({
   origin: function(origin, callback) {
     if (!origin) return callback(null, true); // allow non-browser requests
@@ -24,18 +22,11 @@ app.use(cors({
       return callback(new Error("Not allowed by CORS"));
     }
   },
-  credentials: true, // allow cookies/credentials
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Handle preflight OPTIONS requests
-app.options("*", cors({ 
-  origin: allowedOrigins, 
-  credentials: true, 
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"] 
-}));
 
 app.use(express.json());
 
