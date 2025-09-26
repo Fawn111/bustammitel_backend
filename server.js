@@ -8,6 +8,12 @@ const esimRoutes = require("./routes/esim");
 
 const app = express();
 
+const allowedOrigins = [
+  "https://bustammitel.vercel.app",
+  "http://localhost:5173"
+];
+
+
 // 🌍 Allow all origins for public access
 app.use(cors({
   origin: function(origin, callback) {
