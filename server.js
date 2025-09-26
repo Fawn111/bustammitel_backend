@@ -8,7 +8,6 @@ const authRoutes = require("./routes/auth");
 const esimRoutes = require("./routes/esim");
 
 const app = express();
-const PORT = process.env.PORT || 4001;
 
 // 🌍 Allow all origins for public access
 app.use(
@@ -19,7 +18,6 @@ app.use(
   })
 );
 
-// Middleware
 app.use(express.json());
 
 // Routes
@@ -46,6 +44,7 @@ async function getAccessToken(retries = 3) {
     });
 
     const data = await response.json();
+
     if (!response.ok) throw new Error("Failed to fetch token: " + JSON.stringify(data));
 
     accessToken = data.data.access_token;
@@ -72,39 +71,61 @@ mongoose
   .then(() => {
     console.log("MongoDB connected");
 
+    const PORT = process.env.PORT || 4001;
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`✅ Backend running on port ${PORT}`);
     });
   })
   .catch(err => {
     console.error("MongoDB connection error:", err);
-    process.exit(1);
+    process.exit(1); // Stop container if DB fails
   });
 
 // 🔹 Fetch all packages (local/global) with country filtering
 app.get("/packages", async (req, res) => {
   try {
     const { type, country, limit = 50, page = 1 } = req.query;
+
+    console.log("Incoming request:", { type, country, limit, page });
+
     if (!type) return res.status(400).json({ error: "'type' query param required (local/global)" });
     if (!country) return res.status(400).json({ error: "'country' query param required" });
 
-    const token = await getAccessToken();
+    // Fetch Access Token
+    let token;
+    try {
+      token = await getAccessToken();
+      console.log("Access token fetched:", token?.slice(0, 10) + "...");
+    } catch (err) {
+      console.error("Failed to get access token:", err.message);
+      return res.status(500).json({ error: "Failed to fetch access token", details: err.message });
+    }
+
     const params = new URLSearchParams({
       "filter[type]": type,
-      limit,
-      page,
-      include: "topup",
+      "limit": limit,
+      "page": page,
+      "include": "topup",
     });
+
+    console.log("Requesting Airalo API with params:", params.toString());
 
     const response = await fetch(`https://partners-api.airalo.com/v2/packages?${params.toString()}`, {
       headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
     });
 
-    const data = await response.json();
-    const countryPackage = data.data.find(pkg => pkg.slug.toLowerCase() === country.toLowerCase());
-    if (!countryPackage) return res.status(404).json({ error: "Country package not found" });
+    console.log("Airalo API status:", response.status);
 
-    // ✅ Full mapping preserved
+    const data = await response.json();
+    console.log("Airalo API response data keys:", Object.keys(data));
+
+    const countryPackage = data.data?.find(pkg => pkg.slug.toLowerCase() === country.toLowerCase());
+
+    if (!countryPackage) {
+      console.warn("Country package not found for slug:", country);
+      return res.status(404).json({ error: "Country package not found", available: data.data?.map(p => p.slug) || [] });
+    }
+
     const formattedPackage = {
       slug: countryPackage.slug,
       country_code: countryPackage.country_code,
@@ -163,10 +184,12 @@ app.get("/packages", async (req, res) => {
       ],
     };
 
+    console.log("Formatted package ready for response:", formattedPackage.slug);
     res.json(formattedPackage);
+
   } catch (err) {
-    console.error("Error fetching country packages:", err);
-    res.status(500).json({ error: "Failed to fetch country packages" });
+    console.error("Unexpected error in /packages route:", err);
+    res.status(500).json({ error: "Failed to fetch country packages", details: err.message });
   }
 });
 
