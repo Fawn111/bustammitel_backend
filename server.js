@@ -1,5 +1,4 @@
 const express = require("express");
-const fetch = require("node-fetch");
 require("dotenv").config();
 const cors = require("cors");
 const mongoose = require("mongoose");
