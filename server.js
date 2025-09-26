@@ -11,17 +11,24 @@ const app = express();
 // 🌍 Allow all origins for public access
 app.use(cors({
   origin: function(origin, callback) {
-    // allow requests with no origin (like mobile apps, curl)
-    if(!origin) return callback(null, true);
-    if(allowedOrigins.includes(origin)) {
+    if (!origin) return callback(null, true); // allow non-browser requests
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
       return callback(new Error("Not allowed by CORS"));
     }
   },
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"],
-  credentials: true  // ⚠ allow credentials
+  credentials: true, // allow cookies/credentials
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// Handle preflight OPTIONS requests
+app.options("*", cors({ 
+  origin: allowedOrigins, 
+  credentials: true, 
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"] 
 }));
 
 app.use(express.json());
