@@ -6,7 +6,9 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
 const esimRoutes = require("./routes/esim");
 
+
 const app = express();
+
 
 const allowedOrigins = [
   "https://bustammitel.vercel.app",
@@ -227,6 +229,50 @@ app.get("/countries/local", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch local countries" });
+  }
+});
+
+// 🔹 Fetch compatible devices
+app.get("/compatibility", async (req, res) => {
+  try {
+    const { brand, os, limit = 100, page = 1 } = req.query;
+
+    // 1️⃣ Get valid Airalo access token
+    const token = await getAccessToken();
+
+    // 2️⃣ Build query params
+    const params = new URLSearchParams({ limit, page });
+    if (brand) params.append("filter[brand]", brand.toLowerCase());
+    if (os) params.append("filter[os]", os.toLowerCase());
+
+    // 3️⃣ Fetch compatible devices from Airalo
+    const response = await fetch(
+      `https://sandbox-partners-api.airalo.com/v2/compatible-devices`,
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: "Failed to fetch compatible devices",
+        details: data,
+      });
+    }
+
+    // 4️⃣ Return the data
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching compatible devices:", err);
+    res.status(500).json({
+      error: "Failed to fetch compatible devices",
+      details: err.message,
+    });
   }
 });
 
