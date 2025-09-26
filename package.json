@@ -1,4 +1,11 @@
 {
+  "name": "esim-backend",
+  "version": "1.0.0",
+  "description": "Airalo eSIM backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
@@ -7,5 +14,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.2",
     "node-fetch": "^3.3.2"
-  }
+  },
+  "author": "Your Name",
+  "license": "ISC"
 }
