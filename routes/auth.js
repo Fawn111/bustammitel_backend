@@ -48,7 +48,15 @@ router.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    // ✅ Send _id instead of id
+    res.json({
+      token,
+      user: {
+        _id: user._id,       // 👈 fixed
+        name: user.name,
+        email: user.email
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

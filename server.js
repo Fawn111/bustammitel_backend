@@ -12,7 +12,8 @@ const app = express();
 
 const allowedOrigins = [
   "https://bustammitel.vercel.app",
-  "http://localhost:5173"
+  "http://localhost:5173",
+  "http://localhost:5174",
 ];
 
 app.use(cors({
@@ -34,7 +35,7 @@ app.use(express.json());
 
 // Routes
 app.use("/auth", authRoutes);
-app.use("/api/orders", orderRoutes);
+app.use("/orders", orderRoutes);
 app.use("/esim", esimRoutes);
 
 // Access token logic
