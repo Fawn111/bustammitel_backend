@@ -276,7 +276,6 @@ app.get("/compatibility", async (req, res) => {
     });
   }
 });
-
 // 🔹 Fetch global countries
 app.get("/countries/global", async (req, res) => {
   try {
@@ -290,11 +289,9 @@ app.get("/countries/global", async (req, res) => {
     );
 
     const data = await response.json();
-    const regions = data.data.map(pkg => ({
-      slug: pkg.slug,
-      title: pkg.title,
-      imageUrl: pkg.image?.url || null,
-    }));
+
+    // Return the full pkg object instead of picking fields
+    const regions = data.data.map(pkg => pkg);
 
     res.json({ regions, currentPage: page, totalPages: data.meta?.last_page || 1 });
   } catch (err) {
@@ -302,6 +299,7 @@ app.get("/countries/global", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch global regions" });
   }
 });
+
 
 // 🔹 Fetch single package by slug
 app.get("/packages/:slug", async (req, res) => {
