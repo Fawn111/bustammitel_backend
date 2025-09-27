@@ -13,6 +13,7 @@ const app = express();
 
 const allowedOrigins = [
   "https://bustammitel.vercel.app",
+  "https://www.bustammitel.net/",
   "https://bustammitel-admin.vercel.app",
   "http://localhost:5173",
   "http://localhost:5174",
