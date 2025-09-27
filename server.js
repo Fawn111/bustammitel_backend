@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
 const esimRoutes = require("./routes/esim");
 const orderRoutes = require("./routes/order");
+const couponRoutes = require("./routes/coupon");
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/orders", orderRoutes);
 app.use("/esim", esimRoutes);
+app.use("/coupons", couponRoutes);
 
 // Access token logic
 let accessToken = null;
