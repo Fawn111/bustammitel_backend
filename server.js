@@ -277,26 +277,137 @@ app.get("/compatibility", async (req, res) => {
   }
 });
 // 🔹 Fetch global countries
+// 🔹 Fetch global countries (with proper region mapping)
 app.get("/countries/global", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     const page = parseInt(req.query.page) || 1;
 
     const token = await getAccessToken();
+
     const response = await fetch(
       `https://partners-api.airalo.com/v2/packages?filter[type]=global&limit=${limit}&page=${page}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
+    if (!response.ok) throw new Error(`Airalo API error: ${response.status}`);
+
     const data = await response.json();
 
-    // Return the full pkg object instead of picking fields
-    const regions = data.data.map(pkg => pkg);
+    // Extract unique regions
+    const seen = new Set();
+    const regions = data.data
+      .map(pkg => ({
+        country_code: pkg.country_code,
+        title: pkg.title,
+        slug: pkg.slug,
+        imageUrl: pkg.image?.url || null,
+      }))
+      .filter(pkg => {
+        if (seen.has(pkg.slug)) return false;
+        seen.add(pkg.slug);
+        return true;
+      });
 
     res.json({ regions, currentPage: page, totalPages: data.meta?.last_page || 1 });
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching global countries:", err);
     res.status(500).json({ error: "Failed to fetch global regions" });
+  }
+});
+
+// Fetch packages for a global region
+app.get("/regions/:slug/packages", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const token = await getAccessToken();
+
+    // Fetch all global/regional packages
+    const params = new URLSearchParams({
+      "filter[type]": "global",
+      page: 1,
+    });
+
+    const response = await fetch(`https://partners-api.airalo.com/v2/packages?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await response.json();
+
+    if (!data.data || data.data.length === 0) {
+      return res.status(404).json({ error: "Region not found" });
+    }
+
+    // Find the single region by slug
+    const regionPackage = data.data.find(pkg => pkg.slug.toLowerCase() === slug.toLowerCase());
+
+    if (!regionPackage) {
+      return res.status(404).json({ error: "Region not found" });
+    }
+
+    // Map region data
+    const formatted = {
+      slug: regionPackage.slug,
+      country_code: regionPackage.country_code,
+      title: regionPackage.title,
+      image: regionPackage.image || null,
+      operators: regionPackage.operators?.map(op => ({
+        id: op.id,
+        style: op.style,
+        gradient_start: op.gradient_start,
+        gradient_end: op.gradient_end,
+        type: op.type,
+        is_prepaid: op.is_prepaid,
+        title: op.title,
+        esim_type: op.esim_type,
+        warning: op.warning,
+        apn_type: op.apn_type,
+        apn_value: op.apn_value,
+        is_roaming: op.is_roaming,
+        info: op.info,
+        image: op.image || null,
+        plan_type: op.plan_type,
+        activation_policy: op.activation_policy,
+        is_kyc_verify: op.is_kyc_verify,
+        rechargeability: op.rechargeability,
+        other_info: op.other_info,
+        coverages: op.coverages,
+        install_window_days: op.install_window_days,
+        topup_grace_window_days: op.topup_grace_window_days,
+        apn: op.apn,
+        packages: op.packages?.map(p => ({
+          id: p.id,
+          type: p.type,
+          price: p.price,
+          amount: p.amount,
+          day: p.day,
+          is_unlimited: p.is_unlimited,
+          title: p.title,
+          short_info: p.short_info,
+          qr_installation: p.qr_installation,
+          manual_installation: p.manual_installation,
+          is_fair_usage_policy: p.is_fair_usage_policy,
+          fair_usage_policy: p.fair_usage_policy,
+          data: p.data,
+          voice: p.voice,
+          text: p.text,
+          net_price: p.net_price,
+          prices: p.prices,
+        })) || [],
+      })) || [],
+      countries: [
+        {
+          country_code: regionPackage.country_code,
+          title: regionPackage.title,
+          image: regionPackage.image || null,
+        },
+      ],
+    };
+
+    res.json(formatted);
+  } catch (err) {
+    console.error("Error fetching region packages:", err);
+    res.status(500).json({ error: "Failed to fetch region packages", details: err.message });
   }
 });
 
