@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/auth");
 const esimRoutes = require("./routes/esim");
-
+const orderRoutes = require("./routes/order");
 
 const app = express();
 
@@ -34,6 +34,7 @@ app.use(express.json());
 
 // Routes
 app.use("/auth", authRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/esim", esimRoutes);
 
 // Access token logic
