@@ -321,6 +321,42 @@ app.get("/countries/global", async (req, res) => {
   }
 });
 
+app.get("/countries/global/discover", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+
+    const token = await getAccessToken();
+
+    const response = await fetch(
+      `https://partners-api.airalo.com/v2/packages?filter[type]=global&limit=${limit}&page=${page}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (!response.ok) throw new Error(`Airalo API error: ${response.status}`);
+
+    const data = await response.json();
+
+    // Filter only Discover+ operator
+    const filteredRegions = data.data.map(pkg => {
+      const discoverPlusOperators = pkg.operators?.filter(op => op.title === "Discover");
+      return {
+        slug: pkg.slug,
+        country_code: pkg.country_code,
+        title: pkg.title,
+        imageUrl: pkg.image?.url || null,
+        operators: discoverPlusOperators || [],
+      };
+    }).filter(region => region.operators.length > 0); // keep only regions that have Discover+
+
+    res.json({ regions: filteredRegions, currentPage: page, totalPages: data.meta?.last_page || 1 });
+  } catch (err) {
+    console.error("Error fetching Discover global eSIMs:", err);
+    res.status(500).json({ error: "Failed to fetch Discover global eSIMs", details: err.message });
+  }
+});
+
+
 // Fetch packages for a global region
 app.get("/regions/:slug/packages", async (req, res) => {
   try {
